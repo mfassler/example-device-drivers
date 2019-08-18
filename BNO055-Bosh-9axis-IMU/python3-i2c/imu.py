@@ -70,11 +70,38 @@ class BNO055:
 
 
 
+'''
+# Interesting R/W Registers:
+0x40 - TEMP_SOURCE, only the 2 lsbs
+0x3e - PWR_MODE, only the 2 lsbs
+0x3d - OPR_MODE, only the 4 lsbs
+         0x00 - config mode
+
+         0x01 - ACC only
+         0x02 - MAG only
+         0x03 - GYRO only
+         0x04 - ACC and MAG
+         0x05 - ACC and GYRO
+         0x06 - MAG and GYRO
+         0x07 - ACC and MAG and GYRO
+
+         0x08 - Fusion, IMU
+         0x09 - Fusion, Compass
+         0x0a - Fusion, M4G (Magnet for Gyroscope)
+         0x0b - Fusion, NDOF_FMC_OFF
+         0x0c - Fusion, NDOF
+
+0x3b - UNIT_SEL
+
+... ACC_Config, GYR_Config, MAG_Config...
+'''
+
 
 imu = BNO055(1)
 
 ## 0x3d is OPR_MODE
-imu.write_reg_u8(0x3d, 0x1f)
+imu.write_reg_u8(0x3d, 0x00) # set to config mode
+imu.write_reg_u8(0x3d, 0x07) # set to non-fusion mode, all sensors on
 imu.read_reg_u8(0x3d)
 
 
