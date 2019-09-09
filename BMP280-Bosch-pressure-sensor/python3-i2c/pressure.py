@@ -139,11 +139,10 @@ class BMP280:
 
 
 
+# This formula is from https://en.wikipedia.org/wiki/Pressure_altitude
 def get_altitude(press0, press1):
-    K = 44330.0
-    #p_0 = 101695.0
-    p_0 = press0
-    return K * (1.0 - (float(press1) / p_0) ** (1/5.255))
+    K = 44307.7
+    return K * (1.0 - float(press1 / press0) ** 0.190284)
 
 
 
