@@ -32,10 +32,13 @@ class BMP390:
         self._send_cmd('softreset')
 
         # Set oversampling:
-        self._set_OSR(16, 2)
+        self._set_OSR(32, 2)
 
         # Set IIR filter:
-        self._set_iir_filter_coefficient(7)
+        self._set_IIR_filter_coefficient(3)
+
+        # By default, the BMP390 is already at the highest
+        # sample rate (200Hz), so we won't change it
 
     def _send_cmd(self, cmd):
         '''
@@ -50,7 +53,7 @@ class BMP390:
         CMD_REGISTER = 0x7e
         self.write_reg_u8(CMD_REGISTER, commands[cmd])
 
-    def _set_iir_filter_coefficient(self, iir_filter_coefficient):
+    def _set_IIR_filter_coefficient(self, iir_filter_coefficient):
         '''
         Set the IIR filter coefficient
         Valid values are:
