@@ -1,0 +1,15 @@
+
+Register #11, data-size seems to be 1 byte.  Dunno what it does.
+
+Register #78.  Data-size is 1 byte.  This enables the serial-port and/or i2c port.
+
+Values are:
+
+#    0: "wait for interface"
+#    1: "serial mode"
+#    2: "i2c mode"
+#    3: "serial mode with legacy banner"
+#    4: "serial mode with no preamble"
+
+
+
