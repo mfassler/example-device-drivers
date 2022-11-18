@@ -4,13 +4,14 @@ import sys
 if sys.version_info[0] < 3:
     raise Exception("Must be using Python 3")
 
-import os
 import time
+import struct
 import smbus2
 
 
 def convert_u16_to_s16(val):
     return (val + 2**15) % 2**16 - 2**15
+
 
 def convert_2_bytes_to_s16(MSB, LSB):
     uval = (MSB << 8) | LSB
@@ -19,13 +20,27 @@ def convert_2_bytes_to_s16(MSB, LSB):
 
 class BNO055:
     def __init__(self, busnum):
+        self.qw = 0
+        self.qx = 0
+        self.qy = 0
+        self.qz = 0
+        self.lax = 0
+        self.lay = 0
+        self.laz = 0
+        self.gx = 0
+        self.gy = 0
+        self.gz = 0
+        self.temp = 0
+        self.calib_stat = 0
+
         self._bus = smbus2.SMBus(busnum)
         self._chipAddr = 0x28
         chip_id = self.read_reg_u8(0x00)
         if chip_id == 0xa0:
             print('Found a chip! :-)')
         else:
-            print('wrong chip id')
+            print('wrong chip id:', chip_id)
+
         self._chipId = chip_id
         self._acc_id = self.read_reg_u8(0x01)
         self._mag_id = self.read_reg_u8(0x02)
@@ -33,10 +48,10 @@ class BNO055:
         self._sw_rev_id_lsb = self.read_reg_u8(0x04)
         self._sw_rev_id_msb = self.read_reg_u8(0x05)
         self._bl_ref_id = self.read_reg_u8(0x06)
-        print('Chip ID: 0x%02x' % (self._chipId)) # expecting 0xa0
-        print('ACC ID: 0x%02x' % (self._acc_id)) # expecting 0xfb
-        print('MAG ID: 0x%02x' % (self._mag_id)) # expecting 0x32
-        print('GYR ID: 0x%02x' % (self._gyr_id)) # expecting 0x0f
+        print('Chip ID: 0x%02x' % (self._chipId))  # expecting 0xa0
+        print('ACC ID: 0x%02x' % (self._acc_id))  # expecting 0xfb
+        print('MAG ID: 0x%02x' % (self._mag_id))  # expecting 0x32
+        print('GYR ID: 0x%02x' % (self._gyr_id))  # expecting 0x0f
 
         # The next 3 are software revisions, and can vary:
         print('sw lsb: 0x%02x' % (self._sw_rev_id_lsb))
@@ -50,6 +65,15 @@ class BNO055:
         accel_z = convert_2_bytes_to_s16(data[5], data[4])
         return [accel_x, accel_y, accel_z]
 
+    def get_all_the_things(self):
+        '''
+        Get all of the Fusion data all in 1 step
+        '''
+        data = self._bus.read_i2c_block_data(self._chipAddr, 0x20, 22)
+        data = bytes(data)
+        self.qw, self.qx, self.qy, self.qz, \
+            self.lax, self.lay, self.laz, self.gx, self.gy, self.gz, \
+            self.temp, self.calib_stat = struct.unpack('<hhhhhhhhhhbB', data)
 
     def read_reg_u8(self, reg):
         return self._bus.read_byte_data(self._chipAddr, reg)
@@ -64,10 +88,8 @@ class BNO055:
     def write_reg_u8(self, reg, value):
         return self._bus.write_byte_data(self._chipAddr, reg, value)
 
-
     def read_raw_data(self):
         pass
-
 
 
 '''
@@ -99,15 +121,18 @@ class BNO055:
 
 imu = BNO055(1)
 
-## 0x3d is OPR_MODE
-imu.write_reg_u8(0x3d, 0x00) # set to config mode
-imu.write_reg_u8(0x3d, 0x07) # set to non-fusion mode, all sensors on
+# Register 0x3d is OPR_MODE.  Operating Mode 0x08:
+#   6-DoF Fusion IMU
+#      No magnetic compass fusion
+#      Pitch and Roll are absolute b/c of gravity
+#      Yaw is  relative
+imu.write_reg_u8(0x3d, 0x08)
+
 imu.read_reg_u8(0x3d)
 
-
 while True:
-    print(imu.get_accel())
-    time.sleep(0.25)
-
+    imu.get_all_the_things()
+    print(imu.gx, imu.gy, imu.gz)
+    time.sleep(0.05)
 
 
